@@ -1,23 +1,32 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/time.h>
 
+// Timing function
+static double get_wall_seconds() {
+   struct timeval tv;
+   gettimeofday(&tv, NULL);
+   return tv.tv_sec + (double) tv.tv_usec / 1000000;
+}
 // This allows me to change what to fill the matrix with (int, float, etc.)
 typedef float data_type;
 
-// This function allocates memory for a size*size matrix and fills it with random floats.
+// Allocates memory for a size*size matrix
 data_type **allocate_matrix(int size) {
    data_type **matrix = (data_type**)malloc(sizeof(data_type)*size);
    for(int i = 0; i < size; i++) {
       matrix[i] = (data_type*)malloc(sizeof(data_type)*size);
    }
-
-   for(int i = 0; i < size; i++) { // Fills matrix
-      for(int j = 0; j < size; j++) {
-          matrix[i][j] = rand() % 100;
-      }
-  }
   return matrix;
+}
+
+void fill_matrix(int size, data_type **matrix) {
+    for(int i = 0; i < size; i++) {
+        for(int j = 0; j < size; j++) {
+            matrix[i][j] = rand() % 1000;
+        }
+    }
 }
 
 void deallocate_matrix(int size, data_type **matrix) {
@@ -56,9 +65,26 @@ void subtract_matrix(int size, data_type **A, data_type **B, data_type **C){
 }
 
 void strassen_multiplication(int size, data_type **A, data_type **B, data_type **C) {
-   
+
 }
 
-int main(){
+int main(int argc, char *argv[]) {
 
+   int size = atoi(argv[1]); //Input argument is matrix size
+
+   data_type **A = allocate_matrix(size);
+   data_type **B = allocate_matrix(size);
+   data_type **C = allocate_matrix(size);
+
+   fill_matrix(size, A);
+   fill_matrix(size, B);
+
+   double start_time = get_wall_seconds();
+
+   standard_matrix_multiplication(size, A, B, C);
+
+   double end_time = get_wall_seconds();
+   printf("Time taken: %f seconds\n", end_time - start_time);
+
+   return 0;
 }
