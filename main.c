@@ -20,10 +20,14 @@ data_type **allocate_matrix(int size) {
   return matrix;
 }
 
-void deallocate_matrix() {
+void deallocate_matrix(int size, data_type **matrix) {
+   for(int i = 0; i < size; i++) {
+      free(matrix[i]);
+   }
+   free(matrix);
+}
 
 // Standard algorithm - multiplies A and B, C is output
-}
 void standard_matrix_multiplication(int size, data_type **A, data_type **B, data_type **C) {
    for(int i = 0; i < size; i++) {
       for (int j = 0; j < size; j++) {
@@ -33,6 +37,26 @@ void standard_matrix_multiplication(int size, data_type **A, data_type **B, data
          }
       }
    }
+}
+
+void add_matrix(int size, data_type **A, data_type **B, data_type **C){
+   for(int i = 0; i < size; i++) {
+      for (int j = 0; j < size; i++) {
+         C[i][j] = A[i][j] + B[i][j];
+      }
+   }
+}
+
+void subtract_matrix(int size, data_type **A, data_type **B, data_type **C){
+   for(int i = 0; i < size; i++) {
+      for (int j = 0; j < size; i++) {
+         C[i][j] = A[i][j] - B[i][j];
+      }
+   }
+}
+
+void strassen_multiplication(int size, data_type **A, data_type **B, data_type **C) {
+   
 }
 
 int main(){
