@@ -1,6 +1,6 @@
 # Compiler and flags
 CC = gcc
-CFLAGS = -O3 -march=native -ffast-math -ftree-vectorize -funroll-loops -fopt-info-vec-optimized 
+CFLAGS = -O3 -g -march=native -ffast-math -ftree-vectorize -funroll-loops #-fopt-info-vec-optimized 
 LDFLAGS = 
 
 # Target

@@ -65,7 +65,7 @@ void subtract_matrix(int size, data_type **A, data_type **B, data_type **C){
 }
 
 void strassen_multiplication(int size, data_type **A, data_type **B, data_type **C) {
-   if (size <= 64) { //Only uses strassen for 'large' matrices
+   if (size <= 16) { //Only uses strassen when the (sub)matrices are large
       standard_matrix_multiplication(size, A, B, C);
       return;
    }
