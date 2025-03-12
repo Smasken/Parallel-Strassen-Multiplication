@@ -65,28 +65,31 @@ void subtract_matrix(int size, data_type **A, data_type **B, data_type **C){
 }
 
 void strassen_multiplication(int size, data_type **A, data_type **B, data_type **C) {
+   if (size <= 64) { //Only uses strassen for 'large' matrices
+      standard_matrix_multiplication(size, A, B, C);
+      return;
+   }
    int block_size = size / 2;
 
    // Allocate M1 to M7 and the submatrices for A and B
 
-   data_type ** M1=allocate_matrix(block_size);
-   data_type ** M2=allocate_matrix(block_size);
-   data_type ** M3=allocate_matrix(block_size);
-   data_type ** M4=allocate_matrix(block_size);
-   data_type ** M5=allocate_matrix(block_size);
-   data_type ** M6=allocate_matrix(block_size);
-   data_type ** M7=allocate_matrix(block_size);
-   data_type ** a11=allocate_matrix(block_size);
-   data_type ** a12=allocate_matrix(block_size);
-   data_type ** a21=allocate_matrix(block_size);
-   data_type ** a22=allocate_matrix(block_size);
-   data_type ** b11=allocate_matrix(block_size);
-   data_type ** b12=allocate_matrix(block_size);
-   data_type ** b21=allocate_matrix(block_size);
-   data_type ** b22=allocate_matrix(block_size);
-   data_type ** temp_result1 = allocate_matrix(size);
-   data_type ** temp_result2 = allocate_matrix(size);
-   data_type ** temp_result3 = allocate_matrix(size);
+   data_type **M1=allocate_matrix(block_size);
+   data_type **M2=allocate_matrix(block_size);
+   data_type **M3=allocate_matrix(block_size);
+   data_type **M4=allocate_matrix(block_size);
+   data_type **M5=allocate_matrix(block_size);
+   data_type **M6=allocate_matrix(block_size);
+   data_type **M7=allocate_matrix(block_size);
+   data_type **a11=allocate_matrix(block_size);
+   data_type **a12=allocate_matrix(block_size);
+   data_type **a21=allocate_matrix(block_size);
+   data_type **a22=allocate_matrix(block_size);
+   data_type **b11=allocate_matrix(block_size);
+   data_type **b12=allocate_matrix(block_size);
+   data_type **b21=allocate_matrix(block_size);
+   data_type **b22=allocate_matrix(block_size);
+   data_type **temp_result1 = allocate_matrix(block_size);
+   data_type **temp_result2 = allocate_matrix(block_size);
    // Divides the input matrices into new ones
 
    for(int i = 0; i < block_size; i++) {
@@ -122,21 +125,20 @@ void strassen_multiplication(int size, data_type **A, data_type **B, data_type *
    // M6
    subtract_matrix(block_size, a21, a11, temp_result1);
    add_matrix(block_size, b11, b12, temp_result2);
-   strassen_multiplication(block_size, temp_result1, b22, M6);
+   strassen_multiplication(block_size, temp_result1, temp_result2, M6);
    // M7
    subtract_matrix(block_size, a12, a22, temp_result1);
    add_matrix(block_size, b21, b22, temp_result2);
-   strassen_multiplication(block_size, temp_result1, b22, M7);
+   strassen_multiplication(block_size, temp_result1, temp_result2, M7);
 
-   deallocate_matrix(a11, block_size);
-   deallocate_matrix(a12, block_size);
-   deallocate_matrix(a21, block_size);
-   deallocate_matrix(a22, block_size);
-   deallocate_matrix(b11, block_size);
-   deallocate_matrix(b12, block_size);
-   deallocate_matrix(b21, block_size);
-   deallocate_matrix(b22, block_size);
-   deallocate_matrix(temp_result3, size);
+   deallocate_matrix(block_size, a11);
+   deallocate_matrix(block_size, a12);
+   deallocate_matrix(block_size, a21);
+   deallocate_matrix(block_size, a22);
+   deallocate_matrix(block_size, b11);
+   deallocate_matrix(block_size, b12);
+   deallocate_matrix(block_size, b21);
+   deallocate_matrix(block_size, b22);
 
    /* ---- Calculate C11 to C22 ---- */
    data_type ** c11=allocate_matrix(block_size);
@@ -169,19 +171,19 @@ void strassen_multiplication(int size, data_type **A, data_type **B, data_type *
    }
 
    // Deallocate submatrices
-   deallocate_matrix(c11, block_size);
-   deallocate_matrix(c12, block_size);
-   deallocate_matrix(c21, block_size);
-   deallocate_matrix(c22, block_size);
-   deallocate_matrix(M1, block_size);
-   deallocate_matrix(M2, block_size);
-   deallocate_matrix(M3, block_size);
-   deallocate_matrix(M4, block_size);
-   deallocate_matrix(M5, block_size);
-   deallocate_matrix(M6, block_size);
-   deallocate_matrix(M7, block_size);
-   deallocate_matrix(temp_result1, size);
-   deallocate_matrix(temp_result2, size);
+   deallocate_matrix(block_size, c11);
+   deallocate_matrix(block_size, c12);
+   deallocate_matrix(block_size, c21);
+   deallocate_matrix(block_size, c22);
+   deallocate_matrix(block_size, M1);
+   deallocate_matrix(block_size, M2);
+   deallocate_matrix(block_size, M3);
+   deallocate_matrix(block_size, M4);
+   deallocate_matrix(block_size, M5);
+   deallocate_matrix(block_size, M6);
+   deallocate_matrix(block_size, M7);
+   deallocate_matrix(block_size, temp_result1);
+   deallocate_matrix(block_size, temp_result2);
 }
 
 int main(int argc, char *argv[]) {
@@ -201,15 +203,14 @@ int main(int argc, char *argv[]) {
 
    double start_time = get_wall_seconds();
 
-   // Strassen only used for large matrices
-   if(size < 256) {
-      standard_matrix_multiplication(size, A, B, C);
-   } else {
-      strassen_multiplication(size, A, B, C);
-   }
+   strassen_multiplication(size, A, B, C);
 
    double end_time = get_wall_seconds();
    printf("Time taken: %f seconds\n", end_time - start_time);
+
+   deallocate_matrix(size, A);
+   deallocate_matrix(size, B);
+   deallocate_matrix(size, C);
 
    return 0;
 }
