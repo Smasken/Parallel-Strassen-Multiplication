@@ -4,14 +4,15 @@
 #include <omp.h>
 #include <sys/time.h>
 
+// This allows me to change what to fill the matrix with (int, float, etc.)
+typedef float data_type;
+
 // Timing function
 static double get_wall_seconds() {
    struct timeval tv;
    gettimeofday(&tv, NULL);
    return tv.tv_sec + (double) tv.tv_usec / 1000000;
 }
-// This allows me to change what to fill the matrix with (int, float, etc.)
-typedef float data_type;
 
 // Allocates memory for a size*size matrix
 data_type **allocate_matrix(int size) {
