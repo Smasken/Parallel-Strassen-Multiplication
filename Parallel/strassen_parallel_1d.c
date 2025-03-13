@@ -23,14 +23,14 @@ data_type *allocate_matrix(int size) {
 }
 
 void fill_matrix(int size, data_type *matrix) {
-   for(int i = 0; i < size; i++) {
-      matrix[i] = (data_type)(rand() % 1000);
+   for (int i = 0; i < size; i++) {
+           matrix[i] = (data_type)(rand() % 1000);
    }
 }
 
-// Standard algorithm - multiplies A and B, C is output
+// Standard algorithm - multiplies A and B, C is output. This is borrowed from the lecture notes. 
 void standard_matrix_multiplication(int size, data_type *A, data_type *B, data_type *C, int num_threads) {
-   #pragma omp parallel for num_threads(num_threads)
+   #pragma omp parallel for num_threads(num_threads) schedule(dynamic, 2)
    for(int i = 0; i < size; i++) {
       for (int k = 0; k < size; k++) {
          for(int j = 0; j < size; j++) {
@@ -41,14 +41,14 @@ void standard_matrix_multiplication(int size, data_type *A, data_type *B, data_t
 }
 
 void add_matrix(int size, data_type *A, data_type *B, data_type *C){
-   //#pragma omp parallel for collapse(2) num_threads(num_threads)
+   #pragma omp parallel
    for(int i = 0; i < size; i++) {
       C[i] = A[i] + B[i];
    }
 }
 
 void subtract_matrix(int size, data_type *A, data_type *B, data_type *C){
-   //#pragma omp parallel for collapse(2) num_threads(num_threads)
+   #pragma omp parallel
    for(int i = 0; i < size; i++) {
       C[i] = A[i] - B[i];
    }
@@ -65,7 +65,7 @@ void strassen_multiplication(int size, data_type *A, data_type *B, data_type *C,
    }
    int block_size = size / 2;
 
-   // Allocate M1 to M7 and the submatrices for A and B
+   // Pointers to M1 to M7 and the submatrices for A and B
 
    data_type *a11 = A;
    data_type *a12 = A + block_size; 
