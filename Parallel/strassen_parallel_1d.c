@@ -17,60 +17,44 @@ static double get_wall_seconds() {
 }
 
 // Allocates memory for a size*size matrix
-data_type **allocate_matrix(int size) {
-   data_type **matrix = (data_type**)malloc(sizeof(data_type*) * size);
-   for(int i = 0; i < size; i++) {
-      matrix[i] = (data_type*)malloc(sizeof(data_type) * size);
-   }
+data_type *allocate_matrix(int size) {
+   data_type *matrix = (data_type *)malloc(size*size*sizeof(data_type *));
    return matrix;
 }
 
-void fill_matrix(int size, data_type **matrix) {
-    for(int i = 0; i < size; i++) {
-        for(int j = 0; j < size; j++) {
-            matrix[i][j] = (data_type)(rand() % 1000);
-        }
-    }
-}
-
-void deallocate_matrix(int size, data_type **matrix) {
+void fill_matrix(int size, data_type *matrix) {
    for(int i = 0; i < size; i++) {
-      free(matrix[i]);
+      matrix[i] = (data_type)(rand() % 1000);
    }
-   free(matrix);
 }
 
 // Standard algorithm - multiplies A and B, C is output
-void standard_matrix_multiplication(int size, data_type **A, data_type **B, data_type **C, int num_threads) {
+void standard_matrix_multiplication(int size, data_type *A, data_type *B, data_type *C, int num_threads) {
    #pragma omp parallel for num_threads(num_threads)
    for(int i = 0; i < size; i++) {
       for (int k = 0; k < size; k++) {
          for(int j = 0; j < size; j++) {
-            C[i][j] += A[i][k] * B[k][j];
+            C[i*size+j] += A[i*size+k] * B[k*size+j];
          }
       }
    }
 }
 
-void add_matrix(int size, data_type **A, data_type **B, data_type **C){
+void add_matrix(int size, data_type *A, data_type *B, data_type *C){
    //#pragma omp parallel for collapse(2) num_threads(num_threads)
    for(int i = 0; i < size; i++) {
-      for (int j = 0; j < size; j++) {
-         C[i][j] = A[i][j] + B[i][j];
-      }
+      C[i] = A[i] + B[i];
    }
 }
 
-void subtract_matrix(int size, data_type **A, data_type **B, data_type **C){
+void subtract_matrix(int size, data_type *A, data_type *B, data_type *C){
    //#pragma omp parallel for collapse(2) num_threads(num_threads)
    for(int i = 0; i < size; i++) {
-      for (int j = 0; j < size; j++) {
-         C[i][j] = A[i][j] - B[i][j];
-      }
+      C[i] = A[i] - B[i];
    }
 }
 
-void strassen_multiplication(int size, data_type **A, data_type **B, data_type **C, int num_threads) {
+void strassen_multiplication(int size, data_type *A, data_type *B, data_type *C, int num_threads) {
    if (size <= 128) { //Only uses strassen when the (sub)matrices are large
       
       {
@@ -83,37 +67,32 @@ void strassen_multiplication(int size, data_type **A, data_type **B, data_type *
 
    // Allocate M1 to M7 and the submatrices for A and B
 
-   data_type **M1=allocate_matrix(block_size);
-   data_type **M2=allocate_matrix(block_size);
-   data_type **M3=allocate_matrix(block_size);
-   data_type **M4=allocate_matrix(block_size);
-   data_type **M5=allocate_matrix(block_size);
-   data_type **M6=allocate_matrix(block_size);
-   data_type **M7=allocate_matrix(block_size);
-   data_type **a11=allocate_matrix(block_size);
-   data_type **a12=allocate_matrix(block_size);
-   data_type **a21=allocate_matrix(block_size);
-   data_type **a22=allocate_matrix(block_size);
-   data_type **b11=allocate_matrix(block_size);
-   data_type **b12=allocate_matrix(block_size);
-   data_type **b21=allocate_matrix(block_size);
-   data_type **b22=allocate_matrix(block_size);
-   data_type **temp_result1 = allocate_matrix(block_size);
-   data_type **temp_result2 = allocate_matrix(block_size);
+   data_type *a11 = A;
+   data_type *a12 = A + block_size; 
+   data_type *a21 = A + block_size * size; 
+   data_type *a22 = A + block_size * (size + 1); 
+
+   data_type *b11 = B;
+   data_type *b12 = B + block_size;
+   data_type *b21 = B + block_size * size;
+   data_type *b22 = B + block_size * (size + 1);
+
+   data_type *c11 = C;
+   data_type *c12 = C + block_size;
+   data_type *c21 = C + block_size * size;
+   data_type *c22 = C + block_size * (size + 1);
+
+   data_type *M1 = (data_type *)malloc(block_size * block_size * sizeof(data_type));
+   data_type *M2 = (data_type *)malloc(block_size * block_size * sizeof(data_type));
+   data_type *M3 = (data_type *)malloc(block_size * block_size * sizeof(data_type));
+   data_type *M4 = (data_type *)malloc(block_size * block_size * sizeof(data_type));
+   data_type *M5 = (data_type *)malloc(block_size * block_size * sizeof(data_type));
+   data_type *M6 = (data_type *)malloc(block_size * block_size * sizeof(data_type));
+   data_type *M7 = (data_type *)malloc(block_size * block_size * sizeof(data_type));
+
+   data_type *temp_result1 = (data_type *)malloc(block_size * block_size * sizeof(data_type));
+   data_type *temp_result2 = (data_type *)malloc(block_size * block_size * sizeof(data_type));
    
-   // Divides the input matrices into new ones
-   for(int i = 0; i < block_size; i++) {
-      for(int j = 0; j < block_size; j++) {
-         a11[i][j] = A[i][j];
-         a12[i][j] = A[i][j + block_size];
-         a21[i][j] = A[i + block_size][j];
-         a22[i][j] = A[i + block_size][j + block_size];
-         b11[i][j] = B[i][j];
-         b12[i][j] = B[i][j + block_size];
-         b21[i][j] = B[i + block_size][j];
-         b22[i][j] = B[i + block_size][j + block_size];
-      }
-   }
    /* ---- Calculate M1 to M7 ---- */
    #pragma omp parallel num_threads(num_threads)
    {
@@ -153,20 +132,7 @@ void strassen_multiplication(int size, data_type **A, data_type **B, data_type *
       }
    }
 
-   deallocate_matrix(block_size, a11);
-   deallocate_matrix(block_size, a12);
-   deallocate_matrix(block_size, a21);
-   deallocate_matrix(block_size, a22);
-   deallocate_matrix(block_size, b11);
-   deallocate_matrix(block_size, b12);
-   deallocate_matrix(block_size, b21);
-   deallocate_matrix(block_size, b22);
-
    /* ---- Calculate C11 to C22 ---- */
-   data_type ** c11=allocate_matrix(block_size);
-   data_type ** c12=allocate_matrix(block_size);
-   data_type ** c21=allocate_matrix(block_size);
-   data_type ** c22=allocate_matrix(block_size);
 
    #pragma omp parallel num_threads(num_threads)
    {
@@ -191,30 +157,15 @@ void strassen_multiplication(int size, data_type **A, data_type **B, data_type *
       }
    }
 
-   // Add together the submatrices
-   for(int i = 0; i < block_size; i++) {
-      for(int j = 0; j < block_size; j++) {
-         C[i][j] = c11[i][j];
-         C[i][j + block_size] = c12[i][j];
-         C[i + block_size][j] = c21[i][j];
-         C[i + block_size][j + block_size] = c22[i][j];
-      }
-   }
-
-   // Deallocate submatrices
-   deallocate_matrix(block_size, c11);
-   deallocate_matrix(block_size, c12);
-   deallocate_matrix(block_size, c21);
-   deallocate_matrix(block_size, c22);
-   deallocate_matrix(block_size, M1);
-   deallocate_matrix(block_size, M2);
-   deallocate_matrix(block_size, M3);
-   deallocate_matrix(block_size, M4);
-   deallocate_matrix(block_size, M5);
-   deallocate_matrix(block_size, M6);
-   deallocate_matrix(block_size, M7);
-   deallocate_matrix(block_size, temp_result1);
-   deallocate_matrix(block_size, temp_result2);
+   free(M1);
+   free(M2);
+   free(M3);
+   free(M4);
+   free(M5);
+   free(M6);
+   free(M7);
+   free(temp_result1);
+   free(temp_result2);
 }
 
 int main(int argc, char *argv[]) {
@@ -226,9 +177,9 @@ int main(int argc, char *argv[]) {
    int size = atoi(argv[1]); //Input argument is matrix size
    int num_threads = atoi(argv[2]);
 
-   data_type **A = allocate_matrix(size);
-   data_type **B = allocate_matrix(size);
-   data_type **C = allocate_matrix(size);
+   data_type *A = allocate_matrix(size);
+   data_type *B = allocate_matrix(size);
+   data_type *C = allocate_matrix(size);
 
    fill_matrix(size, A);
    fill_matrix(size, B);
@@ -240,9 +191,9 @@ int main(int argc, char *argv[]) {
    double end_time = get_wall_seconds();
    printf("Time taken: %f seconds\n", end_time - start_time);
 
-   deallocate_matrix(size, A);
-   deallocate_matrix(size, B);
-   deallocate_matrix(size, C);
+   free(A);
+   free(B);
+   free(C);
 
    return 0;
 }
