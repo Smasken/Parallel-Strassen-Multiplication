@@ -5,7 +5,7 @@ LDFLAGS = -fopenmp
 
 # Target
 EXECUTABLE = strassen
-SOURCE = main.c
+SOURCE = strassen_parallel.c
 
 # Build rules
 all: $(EXECUTABLE)
