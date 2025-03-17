@@ -105,7 +105,6 @@ void strassen_multiplication(int size, data_type *A, data_type *B, data_type *C,
    data_type *temp_result13 = allocate_matrix(block_size);
    data_type *temp_result14 = allocate_matrix(block_size);
 
-   
    /* ---- Calculate M1 to M7 ---- */
    #pragma omp parallel num_threads(num_threads)
    {
@@ -191,6 +190,11 @@ void strassen_multiplication(int size, data_type *A, data_type *B, data_type *C,
    free(temp_result8);
    free(temp_result9);
    free(temp_result10);
+   free(temp_result11);
+   free(temp_result12);
+   free(temp_result13);
+   free(temp_result14);
+
 }
 
 int main(int argc, char *argv[]) {
