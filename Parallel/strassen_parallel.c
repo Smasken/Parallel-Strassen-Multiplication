@@ -7,7 +7,7 @@
 #endif
 
 // This allows me to change what to fill the matrix with (int, float, etc.)
-typedef float data_type;
+typedef int data_type;
 
 // Timing function
 static double get_wall_seconds() {
@@ -229,6 +229,7 @@ int main(int argc, char *argv[]) {
    data_type **A = allocate_matrix(size);
    data_type **B = allocate_matrix(size);
    data_type **C = allocate_matrix(size);
+   data_type **C_standard = allocate_matrix(size);
 
    fill_matrix(size, A);
    fill_matrix(size, B);
@@ -240,9 +241,34 @@ int main(int argc, char *argv[]) {
    double end_time = get_wall_seconds();
    printf("Time taken: %f seconds\n", end_time - start_time);
 
+   // Run standard multiplication for comparison
+   printf("Running standard multiplication for verification...\n");
+   start_time = get_wall_seconds();
+   standard_matrix_multiplication(size, A, B, C_standard, num_threads);
+   end_time = get_wall_seconds();
+   printf("Time taken for standard multiplication: %f seconds\n", end_time - start_time);
+
+   // Verify results
+   printf("Verifying results...\n");
+   int correct = 1;
+   for (int i = 0; i < size; i++) {
+      for (int j = 0; j < size; j++) {
+         if (C[i][j] != C_standard[i][j]) {
+            correct = 0;
+         }
+      }
+   }
+
+   if (correct) {
+      printf("Verification successful: Strassen multiplication result is correct.\n");
+   } else {
+      printf("Verification failed: Strassen multiplication result is incorrect.\n");
+   }
+
    deallocate_matrix(size, A);
    deallocate_matrix(size, B);
    deallocate_matrix(size, C);
+   deallocate_matrix(size, C_standard);
 
    return 0;
 }
