@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/time.h>
 #ifdef _OPENMP
     #include <omp.h>
@@ -30,6 +31,7 @@ void fill_matrix(int size, data_type *matrix) {
 
 // Standard algorithm - multiplies A and B, C is output. This is borrowed from the lecture notes. 
 void standard_matrix_multiplication(int size, data_type *A, data_type *B, data_type *C, int num_threads) {
+   memset(C, 0, size * size * sizeof(data_type));
    #pragma omp parallel for num_threads(num_threads) schedule(dynamic, 2)
    for(int i = 0; i < size; i++) {
       for (int k = 0; k < size; k++) {
@@ -55,7 +57,7 @@ void subtract_matrix(int size, data_type *A, data_type *B, data_type *C){
 }
 
 void strassen_multiplication(int size, data_type *A, data_type *B, data_type *C, int num_threads) {
-   if (size <= 256) { //Only uses strassen when the (sub)matrices are large
+   if (size <= 128) { //Only uses strassen when the (sub)matrices are large
       
       {
          standard_matrix_multiplication(size, A, B, C, num_threads);
@@ -68,19 +70,19 @@ void strassen_multiplication(int size, data_type *A, data_type *B, data_type *C,
    // Pointers to the submatrices for A and B, allocate memory for M1-M7
 
    data_type *a11 = A;
-   data_type *a12 = A + block_size; 
-   data_type *a21 = A + block_size * size; 
-   data_type *a22 = A + block_size * (size + 1); 
+   data_type *a12 = A + block_size;
+   data_type *a21 = A + block_size * size;
+   data_type *a22 = A + block_size * size + block_size;
 
    data_type *b11 = B;
    data_type *b12 = B + block_size;
    data_type *b21 = B + block_size * size;
-   data_type *b22 = B + block_size * (size + 1);
+   data_type *b22 = B + block_size * size + block_size;
 
    data_type *c11 = C;
    data_type *c12 = C + block_size;
    data_type *c21 = C + block_size * size;
-   data_type *c22 = C + block_size * (size + 1);
+   data_type *c22 = C + block_size * size + block_size;
 
    data_type *M1 = allocate_matrix(block_size);
    data_type *M2 = allocate_matrix(block_size);
@@ -104,6 +106,7 @@ void strassen_multiplication(int size, data_type *A, data_type *B, data_type *C,
    data_type *temp_result12 = allocate_matrix(block_size);
    data_type *temp_result13 = allocate_matrix(block_size);
    data_type *temp_result14 = allocate_matrix(block_size);
+   memset(C, 0, size * size * sizeof(data_type));
 
    /* ---- Calculate M1 to M7 ---- */
    #pragma omp parallel num_threads(num_threads)
@@ -209,6 +212,7 @@ int main(int argc, char *argv[]) {
    data_type *A = allocate_matrix(size);
    data_type *B = allocate_matrix(size);
    data_type *C = allocate_matrix(size);
+   data_type *C_check = allocate_matrix(size);
 
    fill_matrix(size, A);
    fill_matrix(size, B);
@@ -221,7 +225,26 @@ int main(int argc, char *argv[]) {
    printf("Time taken: %f seconds\n", end_time - start_time);
 
    // Used to check results. Compares a few entries in C with standard multiplication (by changing n_threshold)
-      printf("%d %d %d\n", C[1], C[60], C[431]);
+   printf("%d %d %d\n", C[1], C[60], C[431]);
+
+   // Check C is correct.
+   printf("Checking if matrix is correct...\n");
+   standard_matrix_multiplication(size, A, B, C_check, num_threads); // Calculate standard result
+   printf("%d %d %d\n", C_check[1], C_check[60], C_check[431]);
+
+   int correct = 1;
+   for (int i = 0; i < size * size; i++) {
+      if (C[i] != C_check[i]) {
+         correct = 0;
+         break;
+      }
+   }
+
+   if (correct) {
+      printf("Strassen multiplication result is correct.\n");
+   } else {
+      printf("Strassen multiplication result is incorrect.\n");
+   }
 
    free(A);
    free(B);
