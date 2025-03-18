@@ -83,13 +83,6 @@ void strassen_multiplication(int size, data_type **A, data_type **B, data_type *
 
    // Allocate M1 to M7 and the submatrices for A and B
 
-   data_type **M1=allocate_matrix(block_size);
-   data_type **M2=allocate_matrix(block_size);
-   data_type **M3=allocate_matrix(block_size);
-   data_type **M4=allocate_matrix(block_size);
-   data_type **M5=allocate_matrix(block_size);
-   data_type **M6=allocate_matrix(block_size);
-   data_type **M7=allocate_matrix(block_size);
    data_type **a11=allocate_matrix(block_size);
    data_type **a12=allocate_matrix(block_size);
    data_type **a21=allocate_matrix(block_size);
@@ -98,6 +91,13 @@ void strassen_multiplication(int size, data_type **A, data_type **B, data_type *
    data_type **b12=allocate_matrix(block_size);
    data_type **b21=allocate_matrix(block_size);
    data_type **b22=allocate_matrix(block_size);
+   data_type **M1=allocate_matrix(block_size);
+   data_type **M2=allocate_matrix(block_size);
+   data_type **M3=allocate_matrix(block_size);
+   data_type **M4=allocate_matrix(block_size);
+   data_type **M5=allocate_matrix(block_size);
+   data_type **M6=allocate_matrix(block_size);
+   data_type **M7=allocate_matrix(block_size);
    data_type **temp_result1 = allocate_matrix(block_size);
    data_type **temp_result2 = allocate_matrix(block_size);
    
@@ -241,7 +241,6 @@ int main(int argc, char *argv[]) {
    double end_time = get_wall_seconds();
    printf("Time taken: %f seconds\n", end_time - start_time);
 
-   // Run standard multiplication for comparison
    printf("Running standard multiplication for verification...\n");
    start_time = get_wall_seconds();
    standard_matrix_multiplication(size, A, B, C_standard, num_threads);
