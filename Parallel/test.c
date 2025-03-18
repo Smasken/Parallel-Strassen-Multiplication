@@ -77,7 +77,6 @@ void set_submatrix(int size, data_type *dst, data_type *src, int row_start, int 
 }
 
 void standard_matrix_multiplication(int size, data_type *A, data_type *B, data_type *C, int num_threads) {
-    memset(C, 0, size * size * sizeof(data_type));
     #pragma omp parallel for num_threads(num_threads) schedule(dynamic, 2)
     for(int i = 0; i < size; i++) {
        for (int k = 0; k < size; k++) {
@@ -89,11 +88,7 @@ void standard_matrix_multiplication(int size, data_type *A, data_type *B, data_t
 }
 
 void strassen_multiplication(int size, data_type *A, data_type *B, data_type *C, int num_threads) {
-    // Initialize C to zeros
-    memset(C, 0, size * size * sizeof(data_type));
-    
-    // Base case for recursion
-    if (size <= 64) { // Threshold can be adjusted based on performance
+    if (size <= 128) { //Use standard multiplication for small (sub)matrices
         standard_matrix_multiplication(size, A, B, C, num_threads);
         return;
     }
@@ -141,9 +136,7 @@ void strassen_multiplication(int size, data_type *A, data_type *B, data_type *C,
           // M1
           #pragma omp task private(temp1, temp2)
           {add_matrix(block_size, a11, a22, temp1);
-          print_matrix(block_size, temp1, "a11 + a22");
           add_matrix(block_size, b11, b22, temp2);
-          print_matrix(block_size, temp2, "b11 + b22");
           strassen_multiplication(block_size, temp1, temp2, M1, num_threads);}
           // M2
           #pragma omp task private(temp1)
@@ -220,16 +213,6 @@ int main(int argc, char *argv[]) {
     int size = atoi(argv[1]);
     int num_threads = atoi(argv[2]);
     
-    // Ensure size is a power of 2
-    int power_of_two = 1;
-    while (power_of_two < size) {
-        power_of_two *= 2;
-    }
-    if (size != power_of_two) {
-        printf("Warning: Adjusting matrix size to next power of 2: %d\n", power_of_two);
-        size = power_of_two;
-    }
-    
     data_type *A = allocate_matrix(size);
     data_type *B = allocate_matrix(size);
     data_type *C = allocate_matrix(size);
@@ -237,13 +220,6 @@ int main(int argc, char *argv[]) {
 
     fill_matrix(size, A);
     fill_matrix(size, B);
-
-    if (size <= 16) {
-        print_matrix(size, A, "A");
-        print_matrix(size, B, "B");
-    } else {
-        printf("Matrix size too large to print\n");
-    }
 
     double start_time = get_wall_seconds();
     strassen_multiplication(size, A, B, C, num_threads);
@@ -260,20 +236,14 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < size * size; i++) {
         if (C[i] != C_check[i]) {
             correct = 0;
-            printf("Mismatch at index %d: Strassen = %d, Standard = %d\n", 
-                   i, C[i], C_check[i]);
             break;
         }
     }
 
     if (correct) {
-        printf("Verification successful: Strassen multiplication result is correct.\n");
+        printf("Strassen multiplication result is correct.\n");
     } else {
-        printf("Verification failed: Strassen multiplication result is incorrect.\n");
-    }
-
-    if (size <= 16) {
-        print_matrix(size, C, "Result C");
+        printf("Strassen multiplication result is incorrect.\n");
     }
 
     free(A);
