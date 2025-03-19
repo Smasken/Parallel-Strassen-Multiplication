@@ -62,23 +62,6 @@ void subtract_matrix(int size, data_type *A, data_type *B, data_type *C) {
     }
 }
 
-// Function to extract submatrix from a matrix
-void extract_submatrix(int size, data_type *src, data_type *dst, int row_start, int col_start, int subsize) {
-    for (int i = 0; i < subsize; i++) {
-        for (int j = 0; j < subsize; j++) {
-            dst[i * subsize + j] = src[(i + row_start) * size + (j + col_start)];
-        }
-    }
-}
-
-void set_submatrix(int size, data_type *dst, data_type *src, int row_start, int col_start, int subsize) {
-    for (int i = 0; i < subsize; i++) {
-        for (int j = 0; j < subsize; j++) {
-            dst[(i + row_start) * size + (j + col_start)] = src[i * subsize + j];
-        }
-    }
-}
-
 void standard_matrix_multiplication(int size, data_type *A, data_type *B, data_type *C, int num_threads) {
     #pragma omp parallel for num_threads(num_threads) schedule(dynamic, 2)
     for(int i = 0; i < size; i++) {
@@ -111,15 +94,19 @@ void strassen_multiplication(int size, data_type *A, data_type *B, data_type *C,
     data_type *b22 = allocate_matrix(block_size);
     
     // Extract submatrices
-    extract_submatrix(size, A, a11, 0, 0, block_size);
-    extract_submatrix(size, A, a12, 0, block_size, block_size);
-    extract_submatrix(size, A, a21, block_size, 0, block_size);
-    extract_submatrix(size, A, a22, block_size, block_size, block_size);
-    
-    extract_submatrix(size, B, b11, 0, 0, block_size);
-    extract_submatrix(size, B, b12, 0, block_size, block_size);
-    extract_submatrix(size, B, b21, block_size, 0, block_size);
-    extract_submatrix(size, B, b22, block_size, block_size, block_size);
+    for (int i = 0; i < block_size; i++) {
+        for (int j = 0; j < block_size; j++) {
+            a11[i * block_size + j] = A[i * size + j];
+            a12[i * block_size + j] = A[i * size + (j + block_size)];
+            a21[i * block_size + j] = A[(i + block_size) * size + j];
+            a22[i * block_size + j] = A[(i + block_size) * size + (j + block_size)];
+
+            b11[i * block_size + j] = B[i * size + j];
+            b12[i * block_size + j] = B[i * size + (j + block_size)];
+            b21[i * block_size + j] = B[(i + block_size) * size + j];
+            b22[i * block_size + j] = B[(i + block_size) * size + (j + block_size)];
+        }
+    }
     
     // Calculate C submatrices
     data_type *c11 = allocate_matrix(block_size);
@@ -136,7 +123,7 @@ void strassen_multiplication(int size, data_type *A, data_type *B, data_type *C,
     data_type *M6 = allocate_matrix(block_size);
     data_type *M7 = allocate_matrix(block_size);
 
-    #pragma omp parallel
+    #pragma omp parallel num_threads(num_threads)
     {
         data_type *temp1 = allocate_matrix(block_size); //allocate temps inside of thread to avoid race conditions
         data_type *temp2 = allocate_matrix(block_size);
@@ -148,35 +135,35 @@ void strassen_multiplication(int size, data_type *A, data_type *B, data_type *C,
                 // M1 = (A11 + A22) * (B11 + B22)
                 add_matrix(block_size, a11, a22, temp1);
                 add_matrix(block_size, b11, b22, temp2);
-                strassen_multiplication(block_size, temp1, temp2, M1, 1);
+                strassen_multiplication(block_size, temp1, temp2, M1, num_threads);
             }
 
             #pragma omp section
             {
                 // M2 = (A21 + A22) * B11
                 add_matrix(block_size, a21, a22, temp1);
-                strassen_multiplication(block_size, temp1, b11, M2, 1);
+                strassen_multiplication(block_size, temp1, b11, M2, num_threads);
             }
 
             #pragma omp section
             {
                 // M3 = A11 * (B12 - B22)
                 subtract_matrix(block_size, b12, b22, temp2);
-                strassen_multiplication(block_size, a11, temp2, M3, 1);
+                strassen_multiplication(block_size, a11, temp2, M3, num_threads);
             }
 
             #pragma omp section
             {
                 // M4 = A22 * (B21 - B11)
                 subtract_matrix(block_size, b21, b11, temp2);
-                strassen_multiplication(block_size, a22, temp2, M4, 1);
+                strassen_multiplication(block_size, a22, temp2, M4, num_threads);
             }
 
             #pragma omp section
             {
                 // M5 = (A11 + A12) * B22
                 add_matrix(block_size, a11, a12, temp1);
-                strassen_multiplication(block_size, temp1, b22, M5, 1);
+                strassen_multiplication(block_size, temp1, b22, M5, num_threads);
             }
 
             #pragma omp section
@@ -184,7 +171,7 @@ void strassen_multiplication(int size, data_type *A, data_type *B, data_type *C,
                 // M6 = (A21 - A11) * (B11 + B12)
                 subtract_matrix(block_size, a21, a11, temp1);
                 add_matrix(block_size, b11, b12, temp2);
-                strassen_multiplication(block_size, temp1, temp2, M6, 1);
+                strassen_multiplication(block_size, temp1, temp2, M6, num_threads);
             }
 
             #pragma omp section
@@ -192,7 +179,7 @@ void strassen_multiplication(int size, data_type *A, data_type *B, data_type *C,
                 // M7 = (A12 - A22) * (B21 + B22)
                 subtract_matrix(block_size, a12, a22, temp1);
                 add_matrix(block_size, b21, b22, temp2);
-                strassen_multiplication(block_size, temp1, temp2, M7, 1);
+                strassen_multiplication(block_size, temp1, temp2, M7, num_threads);
             }
         }
 
@@ -217,10 +204,14 @@ void strassen_multiplication(int size, data_type *A, data_type *B, data_type *C,
     add_matrix(block_size, c22, M6, c22);
     
     // Set C submatrices in the result matrix
-    set_submatrix(size, C, c11, 0, 0, block_size);
-    set_submatrix(size, C, c12, 0, block_size, block_size);
-    set_submatrix(size, C, c21, block_size, 0, block_size);
-    set_submatrix(size, C, c22, block_size, block_size, block_size);
+    for (int i = 0; i < block_size; i++) {
+        for (int j = 0; j < block_size; j++) {
+            C[i * size + j] = c11[i * block_size + j];
+            C[i * size + (j + block_size)] = c12[i * block_size + j];
+            C[(i + block_size) * size + j] = c21[i * block_size + j];
+            C[(i + block_size) * size + (j + block_size)] = c22[i * block_size + j];
+        }
+    }
     
     // Free all allocated memory
     free(a11); free(a12); free(a21); free(a22);
