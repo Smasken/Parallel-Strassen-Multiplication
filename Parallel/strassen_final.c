@@ -45,7 +45,7 @@ void print_matrix(int size, data_type *matrix, const char *name) {
 }
 
 void add_matrix(int size, data_type *A, data_type *B, data_type *C) {
-    #pragma omp parallel for schedule(dynamic, 2)
+    #pragma omp parallel for
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
             C[i * size + j] = A[i * size + j] + B[i * size + j];
@@ -54,7 +54,7 @@ void add_matrix(int size, data_type *A, data_type *B, data_type *C) {
 }
 
 void subtract_matrix(int size, data_type *A, data_type *B, data_type *C) {
-    #pragma omp parallel for schedule(dynamic, 2)
+    #pragma omp parallel for
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
             C[i * size + j] = A[i * size + j] - B[i * size + j];
@@ -63,7 +63,7 @@ void subtract_matrix(int size, data_type *A, data_type *B, data_type *C) {
 }
 
 void standard_matrix_multiplication(int size, data_type *A, data_type *B, data_type *C, int num_threads) {
-    #pragma omp parallel for num_threads(num_threads) schedule(dynamic, 2)
+    #pragma omp parallel for num_threads(num_threads) schedule(dynamic, 4)
     for(int i = 0; i < size; i++) {
        for (int k = 0; k < size; k++) {
           for(int j = 0; j < size; j++) {
@@ -202,21 +202,24 @@ void strassen_multiplication(int size, data_type *A, data_type *B, data_type *C,
         }
     }
 
-    // C11 = M1 + M4 - M5 + M7
-    add_matrix(block_size, M1, M4, c11);
-    subtract_matrix(block_size, c11, M5, c11);
-    add_matrix(block_size, c11, M7, c11);
+    #pragma omp parallel sections num_threads(num_threads)
+    {
+        #pragma omp section // C11 = M1 + M4 - M5 + M7
+        {add_matrix(block_size, M1, M4, c11);
+         subtract_matrix(block_size, c11, M5, c11);
+         add_matrix(block_size, c11, M7, c11);}
 
-    // C12 = M3 + M5
-    add_matrix(block_size, M3, M5, c12);
+        #pragma omp section // C12 = M3 + M5
+        {add_matrix(block_size, M3, M5, c12);}
 
-    // C21 = M2 + M4
-    add_matrix(block_size, M2, M4, c21);
+        #pragma omp section // C21 = M2 + M4
+        {add_matrix(block_size, M2, M4, c21);}
 
-    // C22 = M1 - M2 + M3 + M6
-    subtract_matrix(block_size, M1, M2, c22);
-    add_matrix(block_size, c22, M3, c22);
-    add_matrix(block_size, c22, M6, c22);
+        #pragma omp section // C22 = M1 - M2 + M3 + M6
+        {subtract_matrix(block_size, M1, M2, c22);
+         add_matrix(block_size, c22, M3, c22);
+         add_matrix(block_size, c22, M6, c22);}
+    }
     
     // Set C submatrices in the result matrix
     for (int i = 0; i < block_size; i++) {
