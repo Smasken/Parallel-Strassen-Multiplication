@@ -45,7 +45,7 @@ void print_matrix(int size, data_type *matrix, const char *name) {
 }
 
 void add_matrix(int size, data_type *A, data_type *B, data_type *C) {
-    #pragma omp parallel for if(size > 64)
+    #pragma omp parallel for schedule(dynamic, 2)
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
             C[i * size + j] = A[i * size + j] + B[i * size + j];
@@ -54,7 +54,7 @@ void add_matrix(int size, data_type *A, data_type *B, data_type *C) {
 }
 
 void subtract_matrix(int size, data_type *A, data_type *B, data_type *C) {
-    #pragma omp parallel for if(size > 64)
+    #pragma omp parallel for schedule(dynamic, 2)
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
             C[i * size + j] = A[i * size + j] - B[i * size + j];
@@ -108,13 +108,12 @@ void strassen_multiplication(int size, data_type *A, data_type *B, data_type *C,
         }
     }
     
-    // Calculate C submatrices
     data_type *c11 = allocate_matrix(block_size);
     data_type *c12 = allocate_matrix(block_size);
     data_type *c21 = allocate_matrix(block_size);
     data_type *c22 = allocate_matrix(block_size);
     
-    // Allocate memory for intermediate results
+    // Allocate memory M1-M7
     data_type *M1 = allocate_matrix(block_size);
     data_type *M2 = allocate_matrix(block_size);
     data_type *M3 = allocate_matrix(block_size);
@@ -125,66 +124,82 @@ void strassen_multiplication(int size, data_type *A, data_type *B, data_type *C,
 
     #pragma omp parallel num_threads(num_threads)
     {
-        data_type *temp1 = allocate_matrix(block_size); //allocate temps inside of thread to avoid race conditions
-        data_type *temp2 = allocate_matrix(block_size);
-
-        #pragma omp sections
+        #pragma omp single nowait
         {
-            #pragma omp section
+            #pragma omp task
             {
+                data_type *temp_A = allocate_matrix(block_size);
+                data_type *temp_B = allocate_matrix(block_size);
                 // M1 = (A11 + A22) * (B11 + B22)
-                add_matrix(block_size, a11, a22, temp1);
-                add_matrix(block_size, b11, b22, temp2);
-                strassen_multiplication(block_size, temp1, temp2, M1, num_threads);
+                add_matrix(block_size, a11, a22, temp_A);
+                add_matrix(block_size, b11, b22, temp_B);
+                strassen_multiplication(block_size, temp_A, temp_B, M1, num_threads);
+                free(temp_A);
+                free(temp_B);
             }
 
-            #pragma omp section
+            #pragma omp task
             {
+                data_type *temp_A = allocate_matrix(block_size);
                 // M2 = (A21 + A22) * B11
-                add_matrix(block_size, a21, a22, temp1);
-                strassen_multiplication(block_size, temp1, b11, M2, num_threads);
+                add_matrix(block_size, a21, a22, temp_A);
+                strassen_multiplication(block_size, temp_A, b11, M2, num_threads);
+                free(temp_A);
             }
 
-            #pragma omp section
+            #pragma omp task
             {
+                data_type *temp_B = allocate_matrix(block_size);
                 // M3 = A11 * (B12 - B22)
-                subtract_matrix(block_size, b12, b22, temp2);
-                strassen_multiplication(block_size, a11, temp2, M3, num_threads);
+                subtract_matrix(block_size, b12, b22, temp_B);
+                strassen_multiplication(block_size, a11, temp_B, M3, num_threads);
+                free(temp_B);
             }
 
-            #pragma omp section
+            #pragma omp task
             {
+                data_type *temp_B = allocate_matrix(block_size);
                 // M4 = A22 * (B21 - B11)
-                subtract_matrix(block_size, b21, b11, temp2);
-                strassen_multiplication(block_size, a22, temp2, M4, num_threads);
+                subtract_matrix(block_size, b21, b11, temp_B);
+                strassen_multiplication(block_size, a22, temp_B, M4, num_threads);
+                free(temp_B);
             }
 
-            #pragma omp section
+            #pragma omp task
             {
+                data_type *temp_A = allocate_matrix(block_size);
                 // M5 = (A11 + A12) * B22
-                add_matrix(block_size, a11, a12, temp1);
-                strassen_multiplication(block_size, temp1, b22, M5, num_threads);
+                add_matrix(block_size, a11, a12, temp_A);
+                strassen_multiplication(block_size, temp_A, b22, M5, num_threads);
+                free(temp_A);
             }
 
-            #pragma omp section
+            #pragma omp task
             {
+                data_type *temp_A = allocate_matrix(block_size);
+                data_type *temp_B = allocate_matrix(block_size);
                 // M6 = (A21 - A11) * (B11 + B12)
-                subtract_matrix(block_size, a21, a11, temp1);
-                add_matrix(block_size, b11, b12, temp2);
-                strassen_multiplication(block_size, temp1, temp2, M6, num_threads);
+                subtract_matrix(block_size, a21, a11, temp_A);
+                add_matrix(block_size, b11, b12, temp_B);
+                strassen_multiplication(block_size, temp_A, temp_B, M6, num_threads);
+                free(temp_A);
+                free(temp_B);
             }
 
-            #pragma omp section
+            #pragma omp task
             {
+                data_type *temp_A = allocate_matrix(block_size);
+                data_type *temp_B = allocate_matrix(block_size);
                 // M7 = (A12 - A22) * (B21 + B22)
-                subtract_matrix(block_size, a12, a22, temp1);
-                add_matrix(block_size, b21, b22, temp2);
-                strassen_multiplication(block_size, temp1, temp2, M7, num_threads);
+                subtract_matrix(block_size, a12, a22, temp_A);
+                add_matrix(block_size, b21, b22, temp_B);
+                strassen_multiplication(block_size, temp_A, temp_B, M7, num_threads);
+                free(temp_A);
+                free(temp_B);
             }
-        }
 
-        free(temp1);
-        free(temp2);
+            #pragma omp taskwait
+        }
     }
 
     // C11 = M1 + M4 - M5 + M7
