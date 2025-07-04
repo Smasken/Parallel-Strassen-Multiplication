@@ -197,25 +197,21 @@ void strassen_multiplication(int size, data_type *A, data_type *B, data_type *C,
                 free(temp_A);
                 free(temp_B);
             }
-
-            #pragma omp taskwait
         }
-    }
+        #pragma omp taskwait
 
-    #pragma omp parallel sections num_threads(num_threads)
-    {
-        #pragma omp section // C11 = M1 + M4 - M5 + M7
+        #pragma omp task // C11 = M1 + M4 - M5 + M7
         {add_matrix(block_size, M1, M4, c11);
          subtract_matrix(block_size, c11, M5, c11);
          add_matrix(block_size, c11, M7, c11);}
 
-        #pragma omp section // C12 = M3 + M5
+        #pragma omp task // C12 = M3 + M5
         {add_matrix(block_size, M3, M5, c12);}
 
-        #pragma omp section // C21 = M2 + M4
+        #pragma omp task // C21 = M2 + M4
         {add_matrix(block_size, M2, M4, c21);}
 
-        #pragma omp section // C22 = M1 - M2 + M3 + M6
+        #pragma omp task // C22 = M1 - M2 + M3 + M6
         {subtract_matrix(block_size, M1, M2, c22);
          add_matrix(block_size, c22, M3, c22);
          add_matrix(block_size, c22, M6, c22);}

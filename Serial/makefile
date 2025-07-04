@@ -5,7 +5,7 @@ LDFLAGS =
 
 # Target
 EXECUTABLE = strassen
-SOURCE = strassen_serial.c
+SOURCE = strassen_pointers.c
 
 # Build rules
 all: $(EXECUTABLE)

@@ -1,11 +1,11 @@
 # Compiler and flags
 CC = gcc
-CFLAGS = -O3 -g -fopenmp -march=native -ffast-math -ftree-vectorize -funroll-loops -fopt-info-vec-optimized 
+CFLAGS = -O3 -g -fopenmp -march=native -ffast-math -ftree-vectorize -funroll-loops
 LDFLAGS = -fopenmp
 
 # Target
 EXECUTABLE = strassen
-SOURCE = strassen_final.c
+SOURCE = strassen_test.c
 
 # Build rules
 all: $(EXECUTABLE)
