@@ -14,14 +14,6 @@ static double get_wall_seconds() {
    return tv.tv_sec + (double) tv.tv_usec / 1000000;
 }
 
-void fill_matrix(int size, int *matrix) {
-    for (int i = 0; i < size; i++) {
-       for (int j = 0; j < size; j++) {
-          matrix[i*size+j] = (int)(rand() % 10);
-       }
-    }
-}
-
 void standard_matrix_multiplication(int size, int *A, int *B, int *C) {
     for(int i = 0; i < size; i++) {
        for (int k = 0; k < size; k++) {
