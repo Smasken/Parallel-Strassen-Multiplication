@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <cblas.h>
 #include <string.h>
 #include <sys/time.h>
 #ifdef _OPENMP
@@ -86,7 +87,7 @@ void strassen(int* A, int* B, int* C, int size, int depth, int max_depth) {
 
     int* temp = calloc(25 * block, sizeof(int));
 
-    // Allocate temporary submatrices from temp buffer
+    // Allocate temporary submatrices from buffer
     int* A11 = temp;
     int* A12 = temp + block;
     int* A21 = temp + 2 * block;
